@@ -57,10 +57,10 @@ explore: fact_pull_requests {
   }
 
   # ── PR timing metrics (first review, first approval, time to review, etc.) ──
-  join: github_pr_times {
+  join: fact_pr_times {
     view_label:   "PR Timing"
     type:         left_outer
-    sql_on:       ${fact_pull_requests.pr_id} = ${github_pr_times.pr_id} ;;
+    sql_on:       ${fact_pull_requests.pr_id} = ${fact_pr_times.pr_id} ;;
     relationship: one_to_one
   }
 
@@ -125,6 +125,14 @@ explore: fact_pull_requests {
     type:         left_outer
     sql_on:       ${fact_pull_requests.pr_id} = ${bridge_pr_commits_current.pull_request_id} ;;
     relationship: one_to_many
+  }
+
+  # ── Repository stats (stars, watchers, maintainers) ──────────────────────────
+  join: fact_repo_stats {
+    view_label:   "Repo Stats"
+    type:         left_outer
+    sql_on:       ${dim_repository.pk} = ${fact_repo_stats.id} ;;
+    relationship: one_to_one
   }
 }
 

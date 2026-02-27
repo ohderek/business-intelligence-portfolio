@@ -1,20 +1,24 @@
 # dim_repository.view.lkml
 # ─────────────────────────────────────────────────────────────────────────────
 # Repository dimension. One row per GitHub repository.
-# Joined to fact_pull_requests on repo_id (many_to_one).
-#
-# Exposes repository metadata: language, visibility, topics, and the owning
-# team as recorded in the internal service registry.
+# Includes compliance metadata (PCI, SOX, MPOC) from the internal service registry.
 # ─────────────────────────────────────────────────────────────────────────────
 
 view: dim_repository {
   sql_table_name: GITHUB_INSIGHTS.REPORTING.DIM_REPOSITORY ;;
 
-  dimension: id {
+
+  dimension: pk {
     primary_key: yes
     hidden:      yes
     type:        number
-    sql:         ${TABLE}.ID ;;
+    sql:         ${TABLE}.PK ;;
+  }
+
+  dimension: name {
+    type:        string
+    sql:         ${TABLE}.NAME ;;
+    label:       "Repository"
   }
 
   dimension: full_name {
@@ -28,60 +32,95 @@ view: dim_repository {
     }
   }
 
-  dimension: name {
+  dimension: description {
     type:        string
-    sql:         ${TABLE}.NAME ;;
-    label:       "Repository"
+    sql:         ${TABLE}.DESCRIPTION ;;
+    label:       "Description"
   }
 
-  dimension: org {
+  dimension: default_branch {
     type:        string
-    sql:         ${TABLE}.ORG ;;
-    label:       "Organisation"
-  }
-
-  dimension: primary_language {
-    type:        string
-    sql:         ${TABLE}.PRIMARY_LANGUAGE ;;
-    label:       "Primary Language"
-  }
-
-  dimension: visibility {
-    type:        string
-    sql:         ${TABLE}.VISIBILITY ;;
-    label:       "Visibility"
-    description: "public | private | internal"
+    sql:         ${TABLE}.DEFAULT_BRANCH ;;
+    label:       "Default Branch"
+    description: "e.g. main, master"
+    group_label: "Metadata"
   }
 
   dimension: is_archived {
     type:        yesno
     sql:         ${TABLE}.IS_ARCHIVED ;;
     label:       "Is Archived"
+    group_label: "Metadata"
   }
 
-  dimension: owning_team {
+  dimension: is_private {
+    type:        yesno
+    sql:         ${TABLE}.IS_PRIVATE ;;
+    label:       "Is Private"
+    group_label: "Metadata"
+  }
+
+
+  # ── Compliance flags (from service registry) ──────────────────────────────────
+
+  dimension: mpoc {
     type:        string
-    sql:         ${TABLE}.OWNING_TEAM ;;
-    label:       "Owning Team"
-    description: "Team registered as the repository owner in the service registry."
+    sql:         ${TABLE}.MPOC ;;
+    label:       "MPOC"
+    description: "Main Point of Contact — team or engineer responsible for the repository."
+    group_label: "Compliance"
   }
 
-  dimension: owning_service {
-    type:        string
-    sql:         ${TABLE}.OWNING_SERVICE ;;
-    label:       "Owning Service"
+  dimension: pci {
+    type:        yesno
+    sql:         ${TABLE}.PCI ;;
+    label:       "Is PCI"
+    description: "TRUE when the repository is in scope for PCI DSS compliance."
+    group_label: "Compliance"
   }
 
-  dimension_group: created_at {
-    type:       time
-    timeframes: [date, month, year]
-    sql:        ${TABLE}.CREATED_AT ;;
-    label:      "Repo Created"
+  dimension: sox {
+    type:        yesno
+    sql:         ${TABLE}.SOX ;;
+    label:       "Is SOX"
+    description: "TRUE when the repository is in scope for SOX compliance."
+    group_label: "Compliance"
   }
+
+  dimension: general_rules_required {
+    type:        yesno
+    sql:         ${TABLE}.GENERAL_RULES_REQUIRED ;;
+    label:       "General Rules Required"
+    group_label: "Compliance"
+  }
+
+  dimension: maintainer_allowed {
+    type:        yesno
+    sql:         ${TABLE}.MAINTAINER_ALLOWED ;;
+    label:       "Maintainer Access Allowed"
+    group_label: "Compliance"
+  }
+
+
+  # ── Measures ──────────────────────────────────────────────────────────────────
 
   measure: repository_count {
     type:        count_distinct
-    sql:         ${id} ;;
+    sql:         ${pk} ;;
     label:       "Repository Count"
+  }
+
+  measure: pci_repo_count {
+    type:        count_distinct
+    sql:         CASE WHEN ${pci} THEN ${pk} END ;;
+    label:       "PCI Repos"
+    group_label: "Compliance"
+  }
+
+  measure: sox_repo_count {
+    type:        count_distinct
+    sql:         CASE WHEN ${sox} THEN ${pk} END ;;
+    label:       "SOX Repos"
+    group_label: "Compliance"
   }
 }

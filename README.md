@@ -25,40 +25,158 @@ Two explores: `fact_pull_requests` (PR velocity, code churn, review quality) and
 ### Model Architecture
 
 ```mermaid
-flowchart TD
-    subgraph SF["❄️  Snowflake · GITHUB_INSIGHTS.REPORTING"]
-        T1[(FACT_PULL_REQUESTS)]
-        T2[(FACT_COMMIT_FILES)]
-        T3[(FACT_GITHUB_PR_REVIEWS)]
-        T4[(FACT_GITHUB_PR_REVIEW_COMMENTS)]
-        T5[(GITHUB_PR_TIMES)]
-        T6[(BRIDGE_PR_LABELS)]
-        T7[(BRIDGE_PR_COMMITS)]
-        T8[(DIM_REPOSITORY)]
-        T9[(DIM_USERS SCD2)]
-        T10[(DIM_LABELS)]
-    end
+erDiagram
+    FACT_PULL_REQUESTS ||--o{ FACT_PR_REVIEW_COMMENTS : "pr_id"
+    FACT_PULL_REQUESTS ||--o{ FACT_PR_REVIEWS : "pr_id"
+    FACT_PULL_REQUESTS ||--|| FACT_PR_TIMES : "pr_id"
+    FACT_PULL_REQUESTS ||--o{ FACT_COMMIT_FILES : "pr_id"
+    FACT_PULL_REQUESTS ||--o{ BRIDGE_PR_LABELS : "pr_id"
+    FACT_PULL_REQUESTS ||--o{ LEAD_TIME_TO_DEPLOY : "pr_id"
+    FACT_PULL_REQUESTS }o--|| DIM_USER : "user_ldap"
+    FACT_PULL_REQUESTS }o--|| DIM_REPOSITORY : "repo_id"
+    BRIDGE_PR_LABELS }o--|| DIM_LABELS : "label_id"
+    DIM_REPOSITORY ||--|| FACT_REPO_STATS : "repo_id"
 
-    subgraph EXP["🔍  Explore: fact_pull_requests"]
-        E1{{fact_pull_requests\ncore grain}}
-        E1 -->|one_to_many| T2
-        E1 -->|one_to_many| T3
-        E1 -->|one_to_many| T4
-        E1 -->|one_to_one| T5
-        E1 -->|many_to_one| T8
-        E1 -->|one_to_one| T9
-        E1 -->|one_to_many| T6
-        T6 -->|many_to_one| T10
-        E1 -->|one_to_many| T7
-    end
+    FACT_PULL_REQUESTS {
+        number PK_pk
+        number pr_id
+        string org
+        string repo_full_name
+        number repo_id
+        string user_ldap
+        string user_login
+        string author_type
+        string state
+        boolean merged
+        boolean draft
+        string base_ref
+        string head_ref
+        timestamp created_at
+        timestamp merged_at
+        timestamp closed_at
+        string merge_commit_sha
+    }
 
-    subgraph DORA["🔍  Explore: dora_lead_time"]
-        E2{{lead_time_to_deploy}}
-        E2 -->|many_to_one| E1
-        E2 -->|many_to_one| T9
-    end
+    FACT_PR_TIMES {
+        number PK_pk
+        number FK_pr_id
+        timestamp branch_created_at
+        timestamp ready_for_review_at
+        timestamp first_reviewed_at
+        timestamp first_approved_at
+        timestamp last_approved_at
+        timestamp merged_at
+        number time_to_review_epoch
+        number time_to_approve_epoch
+        number time_to_merge_epoch
+        number reviewers_requested_count
+    }
 
-    T1 --- E1
+    FACT_PR_REVIEWS {
+        number PK_pk
+        number FK_pr_id
+        string reviewer_ldap
+        string reviewer_login
+        string pr_author_ldap
+        string state
+        boolean self_review
+        timestamp submitted_at_ts
+    }
+
+    FACT_PR_REVIEW_COMMENTS {
+        number PK_pk
+        number FK_pr_id
+        string commenter_ldap
+        string commenter_login
+        string comment_type
+        timestamp commented_at
+        boolean is_bot
+        boolean self_review
+        string source_object_id
+    }
+
+    FACT_COMMIT_FILES {
+        string PK_pk
+        string FK_pull_request_id
+        string commit_sha
+        string committer_ldap
+        string folder
+        string sub_folder
+        string filename
+        string full_filepath
+        string language
+        string service
+        number additions
+        number deletions
+        boolean is_lock_file
+        boolean is_pr_merge_commit
+        boolean is_noisy_merge_commit
+    }
+
+    LEAD_TIME_TO_DEPLOY {
+        string PK_pk
+        number FK_pull_request_id
+        string service
+        timestamp first_commit_date
+        timestamp merged_at
+        timestamp first_staging_deploy
+        timestamp first_prod_deploy_time
+        string prod_match_scenario
+        number lead_time_to_prod_hours
+        number lead_time_to_prod_days
+        number time_on_staging_hours
+        number merge_to_prod_hours
+    }
+
+    BRIDGE_PR_LABELS {
+        string PK_pk
+        string FK_pull_request_id
+        number FK_label_id
+    }
+
+    DIM_LABELS {
+        number PK_id
+        string name
+        string description
+        string color
+    }
+
+    DIM_USER {
+        string FK_ldap
+        string full_name
+        string email
+        string org_l1_name
+        string org_l2_name
+        string org_l3_name
+        string function_l2_name
+        string core_lead
+        string core_plus_1
+        string job_family
+        string brand_name
+        boolean is_current
+        date effective_start_date
+        date effective_end_date
+    }
+
+    DIM_REPOSITORY {
+        number PK_pk
+        string name
+        string full_name
+        boolean is_archived
+        boolean is_private
+        string default_branch
+        string mpoc
+        boolean pci
+        boolean sox
+        boolean general_rules_required
+    }
+
+    FACT_REPO_STATS {
+        number PK_id
+        number stargazers_count
+        number watchers_count
+        number maintainers_count
+    }
 ```
 
 ### DORA Lead Time Distribution
@@ -90,20 +208,22 @@ xychart-beta
 
 ```
 lookml/
-├── github_insights.model.lkml           Two explores + all join definitions
+├── github_insights.model.lkml               Two explores + all join definitions
 ├── views/
-│   ├── fact_pull_requests.view.lkml     Core PR grain · cycle time · bot detection
-│   ├── fact_commit_files.view.lkml      File churn · UI-accurate line counts · PR size
-│   ├── fact_github_pr_reviews.view.lkml Review events · approvals · changes requested
-│   ├── fact_github_pr_review_comments   Inline + issue comments · excl. description
-│   ├── github_pr_times.view.lkml        Pre-computed lifecycle timing (time to review, etc.)
-│   ├── dim_repository.view.lkml         Repo metadata · owning team · language
-│   ├── dim_users.view.lkml              SCD Type 2 engineer dimension · org hierarchy
-│   ├── dim_labels.view.lkml             GitHub label dimension
-│   ├── bridge_pr_labels.view.lkml       M:M bridge · PR ↔ labels
-│   └── bridge_pr_commits_current.view   M:M bridge · PR ↔ commits (fan-out guard)
+│   ├── fact_pull_requests.view.lkml         Core PR grain · cycle time · bot detection
+│   ├── fact_pr_times.view.lkml              Epoch-based lifecycle timing · first review/approval
+│   ├── fact_commit_files.view.lkml          File churn · UI-accurate line counts · PR size
+│   ├── fact_github_pr_reviews.view.lkml     Review events · approvals · changes requested
+│   ├── fact_github_pr_review_comments.view  Inline + issue comments · excl. description
+│   ├── fact_repo_stats.view.lkml            Stars · watchers · maintainers per repo
+│   ├── lead_time_to_deploy.view.lkml        DORA lead time · SHA match · staging timing
+│   ├── dim_user.view.lkml                   SCD2 engineer · full org hierarchy L1–L3
+│   ├── dim_repository.view.lkml             Repo metadata · PCI/SOX compliance flags
+│   ├── dim_labels.view.lkml                 GitHub label dimension
+│   ├── bridge_pr_labels.view.lkml           M:M bridge · PR ↔ labels
+│   └── bridge_pr_commits_current.view.lkml  M:M bridge · PR ↔ commits (fan-out guard)
 └── dashboards/
-    └── dora_metrics.dashboard.lkml      DORA KPIs · trend · bucket dist · by service/team
+    └── dora_metrics.dashboard.lkml          DORA KPIs · trend · bucket dist · by service/team
 ```
 
 ---

@@ -9,7 +9,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 view: dim_users {
-  sql_table_name: GITHUB_PIPELINES.REPORTING_TABLES.DIM_GITHUB__USERS ;;
+  sql_table_name: GITHUB_INSIGHTS.REPORTING.DIM_USERS ;;
 
   # ── Primary key ──────────────────────────────────────────────────────────
 

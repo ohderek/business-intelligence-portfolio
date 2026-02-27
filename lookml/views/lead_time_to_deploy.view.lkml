@@ -7,7 +7,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 view: lead_time_to_deploy {
-  sql_table_name: GITHUB_PIPELINES.REPORTING_TABLES.LEAD_TIME_TO_DEPLOY ;;
+  sql_table_name: GITHUB_INSIGHTS.REPORTING.LEAD_TIME_TO_DEPLOY ;;
 
   # ── Primary key ──────────────────────────────────────────────────────────
 

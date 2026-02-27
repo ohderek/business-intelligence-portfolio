@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0a1628,1a3a5c,0d2137&height=220&section=header&text=Business+Intelligence&fontSize=50&fontColor=dcc99a&fontAlignY=62&animation=fadeIn&desc=Derek+O%27Halloran+%C2%B7+Senior+Data+%26+BI+Engineer&descSize=18&descAlignY=80&descColor=7da8cc" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0,0a1628,50,152a4a,100,0a1628&height=200&section=header&text=Business+Intelligence&fontSize=50&fontColor=dcc99a&fontAlignY=52&animation=fadeIn&desc=Looker+LookML+%7C+Tableau+%7C+Derek+OHalloran&descSize=18&descAlignY=72&descColor=7da8cc" />
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=500&size=20&duration=3500&pause=800&color=0a1628&center=true&vCenter=true&width=700&height=50&lines=Data+tells+a+story.+Dashboards+make+it+undeniable.;LookML%3A+business+logic+that+belongs+in+version+control.;DORA+metrics+that+actually+drive+engineering+decisions.;Tableau%3A+from+raw+numbers+to+clear+narrative." alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=500&size=20&duration=3500&pause=800&color=0a1628&center=true&vCenter=true&width=700&height=50&lines=Data+tells+a+story.+Dashboards+make+it+undeniable.;LookML%3A+business+logic+in+version+control.;DORA+metrics+that+drive+engineering+decisions.;Tableau%3A+from+raw+numbers+to+clear+narrative." alt="Typing SVG" />
 
 </div>
 
@@ -16,46 +16,49 @@
 
 ---
 
-## LookML — Engineering Velocity
+## LookML — GitHub Insights Model
 
-The LookML project models GitHub PR and deployment data from the [GitHub Insights](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) pipeline into a governed Looker semantic layer. Two explores power two distinct question sets.
+The LookML project models GitHub PR and deployment data from the [GitHub Insights](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) pipeline into a governed Looker semantic layer.
+
+Two explores: `fact_pull_requests` (PR velocity, code churn, review quality) and `dora_lead_time` (DORA metrics, SHA match quality gates).
 
 ### Model Architecture
 
 ```mermaid
-flowchart LR
-    subgraph SF["❄️  Snowflake · GITHUB_INSIGHTS"]
+flowchart TD
+    subgraph SF["❄️  Snowflake · GITHUB_INSIGHTS.REPORTING"]
         T1[(FACT_PULL_REQUESTS)]
-        T2[(LEAD_TIME_TO_DEPLOY)]
-        T3[(DIM_USERS)]
+        T2[(FACT_COMMIT_FILES)]
+        T3[(FACT_GITHUB_PR_REVIEWS)]
+        T4[(FACT_GITHUB_PR_REVIEW_COMMENTS)]
+        T5[(GITHUB_PR_TIMES)]
+        T6[(BRIDGE_PR_LABELS)]
+        T7[(BRIDGE_PR_COMMITS)]
+        T8[(DIM_REPOSITORY)]
+        T9[(DIM_USERS SCD2)]
+        T10[(DIM_LABELS)]
     end
 
-    subgraph V["📐  LookML Views"]
-        V1[pr_facts]
-        V2[lead_time_to_deploy]
-        V3[dim_users SCD2]
+    subgraph EXP["🔍  Explore: fact_pull_requests"]
+        E1{{fact_pull_requests\ncore grain}}
+        E1 -->|one_to_many| T2
+        E1 -->|one_to_many| T3
+        E1 -->|one_to_many| T4
+        E1 -->|one_to_one| T5
+        E1 -->|many_to_one| T8
+        E1 -->|one_to_one| T9
+        E1 -->|one_to_many| T6
+        T6 -->|many_to_one| T10
+        E1 -->|one_to_many| T7
     end
 
-    subgraph E["🔍  Explores"]
-        E1{{pr_velocity}}
-        E2{{dora_lead_time}}
+    subgraph DORA["🔍  Explore: dora_lead_time"]
+        E2{{lead_time_to_deploy}}
+        E2 -->|many_to_one| E1
+        E2 -->|many_to_one| T9
     end
 
-    subgraph D["📊  Dashboards"]
-        D1[DORA Metrics]
-        D2[Engineering Velocity]
-    end
-
-    T1 --> V1
-    T2 --> V2
-    T3 --> V3
-    V1 --> E1
-    V3 --> E1
-    V2 --> E2
-    V1 --> E2
-    V3 --> E2
-    E1 --> D2
-    E2 --> D1
+    T1 --- E1
 ```
 
 ### DORA Lead Time Distribution
@@ -74,11 +77,34 @@ xychart-beta
 
 | Decision | Why |
 |---|---|
-| `sql_always_where` on explores | Bot commits excluded by default — analysts can't accidentally inflate PR counts |
+| `sql_always_where: is_bot = FALSE` on explore | Bot commits excluded by default — analysts can't accidentally inflate PR counts |
+| `is_ui_pr_diff_row` flag in `fact_commit_files` | Matches exactly what GitHub shows in the PR diff UI — merge commits only, minus noisy merges and lock files |
+| `sql_distinct_key` on churn measures | Prevents double-counting when commit files, reviews, and comments are all joined in the same query |
+| Commit counts via `bridge_pr_commits_current` | Isolates commit COUNT DISTINCT from the commit files join, keeping measures stable regardless of which other tables are joined |
 | `dora_bucket_sort` hidden dimension | Forces Elite → High → Medium → Low sort order (LookML has no native "sort by field" for strings) |
-| SCD Type 2 `dim_users` | Point-in-time reports use a date-range join; current dashboards use `is_current = true` |
-| `count_distinct` on `engineer_count` | Prevents fan-out inflation when dimension joins to a many-to-one fact |
+| `from:` aliases for reviewer/commenter dims | Reuses `dim_users` twice with different join aliases — avoids schema duplication while preserving team context for both reviewer and commenter breakdowns |
+| SCD Type 2 `dim_users` | Point-in-time reports use a date-range join; current dashboards use `is_current = TRUE` |
 | Dashboard-as-code | DORA dashboard versioned in LookML — deployed identically across dev / staging / prod |
+
+### File Structure
+
+```
+lookml/
+├── github_insights.model.lkml           Two explores + all join definitions
+├── views/
+│   ├── fact_pull_requests.view.lkml     Core PR grain · cycle time · bot detection
+│   ├── fact_commit_files.view.lkml      File churn · UI-accurate line counts · PR size
+│   ├── fact_github_pr_reviews.view.lkml Review events · approvals · changes requested
+│   ├── fact_github_pr_review_comments   Inline + issue comments · excl. description
+│   ├── github_pr_times.view.lkml        Pre-computed lifecycle timing (time to review, etc.)
+│   ├── dim_repository.view.lkml         Repo metadata · owning team · language
+│   ├── dim_users.view.lkml              SCD Type 2 engineer dimension · org hierarchy
+│   ├── dim_labels.view.lkml             GitHub label dimension
+│   ├── bridge_pr_labels.view.lkml       M:M bridge · PR ↔ labels
+│   └── bridge_pr_commits_current.view   M:M bridge · PR ↔ commits (fan-out guard)
+└── dashboards/
+    └── dora_metrics.dashboard.lkml      DORA KPIs · trend · bucket dist · by service/team
+```
 
 ---
 
@@ -133,6 +159,6 @@ xychart-beta
 
 <br/><br/>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0a1628,1a3a5c&height=100&section=footer" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0,0a1628,50,152a4a,100,0a1628&height=100&section=footer" />
 
 </div>

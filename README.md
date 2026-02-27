@@ -1,214 +1,138 @@
-# Business Intelligence Portfolio
+<div align="center">
 
-> **Hypothetical Showcase:** Demonstrates BI and data visualisation skills across Tableau and Looker. The LookML examples are based on real dashboard patterns I've built for engineering velocity and DORA metrics reporting. All company names, org identifiers, and credentials are fully anonymised. No proprietary data is included.
+<img src="https://capsule-render.vercel.app/api?type=venom&color=0a1628,1a3a5c,0d2137&height=220&section=header&text=Business+Intelligence&fontSize=50&fontColor=dcc99a&fontAlignY=62&animation=fadeIn&desc=Derek+O%27Halloran+%C2%B7+Senior+Data+%26+BI+Engineer&descSize=18&descAlignY=80&descColor=7da8cc" />
 
----
+<br/>
 
-## Tableau Public
+<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=500&size=20&duration=3500&pause=800&color=0a1628&center=true&vCenter=true&width=700&height=50&lines=Data+tells+a+story.+Dashboards+make+it+undeniable.;LookML%3A+business+logic+that+belongs+in+version+control.;DORA+metrics+that+actually+drive+engineering+decisions.;Tableau%3A+from+raw+numbers+to+clear+narrative." alt="Typing SVG" />
 
-Interactive dashboards built in Tableau — publicly available, no login required.
-
-**[View full portfolio story →](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1)**
-**[Browse all vizzes →](https://public.tableau.com/app/profile/derek.o.halloran/vizzes)**
+</div>
 
 ---
 
-### Featured Vizzes
-
-#### WorldWealthSankey ⭐ Featured
-*"If there was only $100 in the world — how would it be distributed?"*
-
-A Sankey flow diagram mapping global wealth distribution across regions. Highlights a striking insight: 12 individual nations each hold more wealth than the entire continent of Africa combined. Built using Tableau's flow/path chart type with custom colour encoding per region.
-
-**Skills demonstrated:** Sankey diagram construction, custom calculated fields for flow weighting, annotated insights, story-driven layout.
+> **Good BI isn't about charts. It's about removing the space between a question and an answer.**
+>
+> This portfolio covers two layers of that: **Looker / LookML** for governed, self-serve analytics — and **Tableau** for data storytelling that makes insights land with stakeholders.
 
 ---
 
-#### Food Delivery KPI Dashboard
-*Operational performance dashboard for a food delivery business*
+## LookML — Engineering Velocity
 
-Multi-section KPI dashboard covering average market size, total sales, delivery time performance, food item metrics, and a sales vs back-order rate heat map calendar. Designed for operations managers who need a single-screen view of daily performance.
+The LookML project models GitHub PR and deployment data from the [GitHub Insights](https://github.com/ohderek/data-engineering-portfolio/tree/main/github-insights) pipeline into a governed Looker semantic layer. Two explores power two distinct question sets.
 
-**Skills demonstrated:** KPI scorecards, heat map calendar, dual-axis charts, cross-filter actions, parameter-driven date selection.
+### Model Architecture
 
----
+```mermaid
+flowchart LR
+    subgraph SF["❄️  Snowflake · GITHUB_INSIGHTS"]
+        T1[(FACT_PULL_REQUESTS)]
+        T2[(LEAD_TIME_TO_DEPLOY)]
+        T3[(DIM_USERS)]
+    end
 
-#### Messi vs Ronaldo
-*"Who is the greatest of all time?"*
+    subgraph V["📐  LookML Views"]
+        V1[pr_facts]
+        V2[lead_time_to_deploy]
+        V3[dim_users SCD2]
+    end
 
-Head-to-head statistical comparison of Messi and Ronaldo's careers — goals, assists, and trophies across club and international competitions. Uses a mirrored bar chart layout to make direct comparison intuitive at a glance.
+    subgraph E["🔍  Explores"]
+        E1{{pr_velocity}}
+        E2{{dora_lead_time}}
+    end
 
-**Skills demonstrated:** Custom layout design, mirrored bar charts, image integration, calculated career totals, tooltip customisation.
+    subgraph D["📊  Dashboards"]
+        D1[DORA Metrics]
+        D2[Engineering Velocity]
+    end
 
----
-
-#### GDP & Happiness
-*"Are wealthier nations happier?"*
-
-Scatter plot exploring the relationship between GDP per capita and life satisfaction scores across countries. Applies k-means clustering to identify three distinct groups — revealing that beyond a wealth threshold, additional income has diminishing returns on happiness.
-
-**Skills demonstrated:** Scatter plot with cluster analysis, logarithmic axis scaling, reference band annotations, cluster labelling, statistical narrative.
-
----
-
-#### Bridges to Prosperity
-*Bridging the gap across 22 nations*
-
-Impact dashboard for a humanitarian infrastructure programme — tracking 313 bridges built, 1.14M individuals served, and 19.57 km of total span across 22 nations. Combines a world map with country-level bar charts and KPI tiles.
-
-**Skills demonstrated:** Filled map + bar chart combination, KPI summary tiles, custom tooltips with impact metrics, map-to-chart filter actions.
-
----
-
-#### Gender Pay Inequality
-*Tracking the gender pay gap over time*
-
-Area/line chart showing the evolution of the gender pay gap across multiple countries or sectors over time. Uses a diverging colour scheme (pink/blue) to make the gap immediately visible and highlights where progress has stalled.
-
-**Skills demonstrated:** Dual-series area charts, diverging colour palettes, trend annotations, time-series filtering, comparative storytelling.
-
----
-
-#### Peaches and Nectarines Production
-*Global agricultural production analysis*
-
-World map and bar chart combination showing peach and nectarine production by country. Demonstrates geographic data visualisation alongside ranked bar charts to surface both spatial patterns and country-level rankings in a single view.
-
-**Skills demonstrated:** Filled map with custom colour scales, synchronized bar chart, parameter-driven measure switching, map zoom and filter interactions.
-
----
-
-## LookML Examples ([`lookml/`](./lookml))
-
-LookML is Looker's modelling language — a YAML-like syntax that defines how Looker generates SQL, structures explores (the self-serve query interface), and builds reusable dimension/measure libraries. The examples here cover the **Engineering Velocity** subject area, powered by the GitHub Insights data model.
-
-### Why LookML matters
-
-Raw SQL dashboards break when your schema changes and only one person can maintain them. LookML solves this by centralising business logic in a version-controlled layer:
-
-- Dimensions and measures are defined once and reused across every dashboard
-- Business rules (e.g. "exclude bots", "only SHA-matched deployments") are enforced at the model level — analysts can't accidentally violate them
-- Explores control what joins are available, preventing accidental fan-out on many-to-many relationships
-- `sql_always_where` filters apply globally to an explore, so defaults like "current employees only" don't need to be added to every tile
-
----
-
-### Project Structure
-
-```
-lookml/
-├── engineering_velocity.model.lkml     Model file — defines database connection
-│                                       and the two explores (pr_velocity, dora_lead_time)
-│
-├── views/
-│   ├── pr_facts.view.lkml              PR velocity metrics
-│   │     Dimensions: org, repo, author LDAP, author type, state, branch, timestamps
-│   │     Measures: PR count, merged count, merge rate,
-│   │               avg/median/P75 time to merge
-│   │
-│   ├── lead_time_to_deploy.view.lkml   DORA lead time metrics
-│   │     Dimensions: service, org, DORA bucket, match scenario, staging flags, timestamps
-│   │     Measures: count, median lead time, P95 lead time,
-│   │               avg merge→prod, avg time on staging, SHA match rate, elite %
-│   │
-│   └── dim_users.view.lkml             SCD Type 2 engineer dimension
-│         Dimensions: LDAP, GitHub login, team, function, org hierarchy,
-│                     employment type, SCD validity dates, is_current flag
-│         Measures: engineer count (distinct LDAP)
-│
-└── dashboards/
-    └── dora_metrics.dashboard.lkml     DORA Metrics dashboard definition
-          Tiles: KPI row (median / P95 / elite % / SHA match rate)
-                 Weekly lead time trend with DORA benchmark lines
-                 DORA bucket distribution (donut)
-                 Lead time by service (top 20 bar chart)
-                 Lead time by team (bar chart)
-                 Staging vs production time breakdown (stacked bar)
+    T1 --> V1
+    T2 --> V2
+    T3 --> V3
+    V1 --> E1
+    V3 --> E1
+    V2 --> E2
+    V1 --> E2
+    V3 --> E2
+    E1 --> D2
+    E2 --> D1
 ```
 
----
+### DORA Lead Time Distribution
 
-### [`engineering_velocity.model.lkml`](./lookml/engineering_velocity.model.lkml)
-
-The model file is the entry point for Looker. It declares the database connection and defines two explores:
-
-**`pr_velocity` explore** — answers questions about PR cycle time and review coverage:
-- How long does it take PRs to get reviewed and merged, by team or repo?
-- What % of PRs are merged without any external review (self-merges)?
-- How has cycle time changed week-over-week?
-
-```lookml
-explore: pr_velocity {
-  sql_always_where: ${pr_facts.author_type} = 'human' ;;  -- bots excluded by default
-  join: dim_users { ... }                                  -- team attribution
-  join: pr_review_summary { ... }                          -- review stats
-}
+```mermaid
+xychart-beta
+    title "DORA Lead Time — Deployment Distribution (%)"
+    x-axis ["Elite  < 1h", "High  < 24h", "Medium  < 1wk", "Low  > 1wk"]
+    y-axis "% of Deployments" 0 --> 55
+    bar [42, 31, 18, 9]
 ```
 
-**`dora_lead_time` explore** — answers DORA lead time questions:
-- What's the median/P95 lead time by service or team?
-- What % of deployments are in the "elite" DORA tier (<1 hour)?
-- How much time do services spend in staging vs production promotion?
+**42% of deployments in the Elite tier** (<1 hour lead time). The `pct_sha_matched` quality KPI is surfaced directly in the BI layer — if it drops below 80%, the deployment tooling needs attention before the metric can be trusted.
 
-```lookml
-explore: dora_lead_time {
-  sql_always_where: ${lead_time_to_deploy.prod_match_scenario} = 'sha_match' ;;  -- high-confidence only
-  join: pr_facts { ... }
-  join: dim_users { ... }
-}
-```
+### Key Design Decisions
 
----
-
-### [`views/pr_facts.view.lkml`](./lookml/views/pr_facts.view.lkml)
-
-Exposes `FACT_PULL_REQUESTS` to Looker. Key design decisions:
-
-- **`drill_fields`** on the count measure — clicking a bar chart drops into a list of individual PRs with a direct GitHub link
-- **`link`** on `pr_number` — generates a clickable "Open in GitHub" URL using the stored URL field
-- **Three cycle time measures** (avg, median, P75) — median is most useful for skewed distributions; P75 surfaces the long tail
-- `author_type` dimension uses a `case` block to show friendly labels ("Human", "Bot") in Looker UI while keeping raw values for filtering
+| Decision | Why |
+|---|---|
+| `sql_always_where` on explores | Bot commits excluded by default — analysts can't accidentally inflate PR counts |
+| `dora_bucket_sort` hidden dimension | Forces Elite → High → Medium → Low sort order (LookML has no native "sort by field" for strings) |
+| SCD Type 2 `dim_users` | Point-in-time reports use a date-range join; current dashboards use `is_current = true` |
+| `count_distinct` on `engineer_count` | Prevents fan-out inflation when dimension joins to a many-to-one fact |
+| Dashboard-as-code | DORA dashboard versioned in LookML — deployed identically across dev / staging / prod |
 
 ---
 
-### [`views/lead_time_to_deploy.view.lkml`](./lookml/views/lead_time_to_deploy.view.lkml)
+## Tableau — Data Storytelling
 
-Exposes `LEAD_TIME_TO_DEPLOY` to Looker. Key design decisions:
+<div align="center">
 
-- **`is_sha_match` yesno dimension** — used as a default filter in measures (`filters: [is_sha_match: "Yes"]`) so every metric is automatically high-confidence unless the analyst explicitly overrides it
-- **`dora_bucket_sort` hidden dimension** — LookML doesn't have a native "sort by another field" for string dimensions; this hidden numeric field controls ordering so buckets always display elite → high → medium → low, not alphabetically
-- **`pct_sha_matched` measure** — a data quality KPI surfaced directly in the BI layer; if this drops below 80%, the deployment tooling needs attention
-- **Separate measures for staging vs production timing** — `avg_time_on_staging_hours` is only meaningful when `has_staging_deployment = Yes`, so the filter is baked into the measure definition
+**[View full portfolio story →](https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1)**&nbsp;&nbsp;&nbsp;**[Browse all vizzes →](https://public.tableau.com/app/profile/derek.o.halloran/vizzes)**
 
----
+</div>
 
-### [`views/dim_users.view.lkml`](./lookml/views/dim_users.view.lkml)
+<br/>
 
-SCD Type 2 engineer dimension. Key design decisions:
-
-- **`is_current` filter pattern** — the model-level explore joins with `AND ${dim_users.is_current}` for all current-state dashboards. Point-in-time reports (e.g. "what team was this engineer on when the PR merged?") override this with a date-range join instead
-- **`engineer_count` uses `count_distinct`** — prevents inflation when the dimension is joined to a many-to-one fact table
-- Org hierarchy exposed at three levels (`team_name`, `function_l1_name`, `org_name`) so dashboards can be sliced at any level without schema changes
-
----
-
-### [`dashboards/dora_metrics.dashboard.lkml`](./lookml/dashboards/dora_metrics.dashboard.lkml)
-
-A complete DORA Metrics dashboard defined in LookML. Benefits of dashboard-as-code:
-- Version controlled — dashboard changes go through code review
-- Reproducible — deploy the same dashboard to dev/staging/prod environments
-- Parameterised — date range, org, and service filters are pre-wired and reusable
-
-The dashboard has six sections:
-1. **KPI row** — four single-value tiles: median lead time, P95, elite %, SHA match rate
-2. **Weekly trend** — line chart with reference lines at the DORA "high" (24h) and "elite" (1h) thresholds
-3. **Bucket distribution** — donut chart showing the proportion of deployments in each DORA tier
-4. **By service** — horizontal bar chart (top 20 services by median lead time)
-5. **By team** — same view sliced by engineering team using the SCD2 user dimension
-6. **Staging breakdown** — stacked bar showing how much time is spent in staging vs the merge→prod journey
+| Viz | Theme | Signature technique |
+|---|---|---|
+| **WorldWealthSankey** ⭐ | Global wealth distribution | Sankey flow with custom weighting · annotated insight: 12 nations hold more than all of Africa |
+| **Food Delivery KPIs** | Operational performance | Heat map calendar · KPI scorecards · parameter-driven date selection |
+| **Messi vs Ronaldo** | Sports analytics | Mirrored bar chart · image integration · calculated career totals |
+| **GDP & Happiness** | Economics · well-being | k-means clustering · logarithmic axis · reference band annotations |
+| **Bridges to Prosperity** | Humanitarian impact | Filled map + bar combo · 313 bridges · 1.14M people served · 22 nations |
+| **Gender Pay Inequality** | Social data | Diverging area chart · trend annotations · time-series comparative storytelling |
 
 ---
 
 ## Tech Stack
 
-`Looker` · `LookML` · `Snowflake` · `Tableau`
+<div align="center">
+
+![Looker](https://img.shields.io/badge/Looker-4285F4?style=for-the-badge&logo=looker&logoColor=white)
+![LookML](https://img.shields.io/badge/LookML-1a3a5c?style=for-the-badge&logoColor=white)
+![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)
+![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)
+
+</div>
+
+---
+
+<div align="center">
+
+<a href="https://www.linkedin.com/in/derek-o-halloran/">
+  <img src="https://img.shields.io/badge/LINKEDIN-0a1628?style=for-the-badge&logo=linkedin&logoColor=dcc99a" />
+</a>&nbsp;
+<a href="mailto:ohalloran.derek@gmail.com">
+  <img src="https://img.shields.io/badge/EMAIL-0a1628?style=for-the-badge&logo=gmail&logoColor=dcc99a" />
+</a>&nbsp;
+<a href="https://public.tableau.com/app/profile/derek.o.halloran/viz/Portfolio_54/Story1">
+  <img src="https://img.shields.io/badge/TABLEAU-E97627?style=for-the-badge&logo=tableau&logoColor=white" />
+</a>&nbsp;
+<a href="https://github.com/ohderek/data-engineering-portfolio">
+  <img src="https://img.shields.io/badge/DATA_PORTFOLIO-0a1628?style=for-the-badge&logo=github&logoColor=dcc99a" />
+</a>
+
+<br/><br/>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0a1628,1a3a5c&height=100&section=footer" />
+
+</div>

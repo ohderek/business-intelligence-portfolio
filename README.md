@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0,0a1628,50,152a4a,100,0a1628&height=200&section=header&text=Business+Intelligence&fontSize=50&fontColor=dcc99a&fontAlignY=52&animation=fadeIn&desc=Looker+LookML+%7C+Tableau+%7C+Derek+OHalloran&descSize=18&descAlignY=72&descColor=7da8cc" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0,0a1628,50,152a4a,100,0a1628&height=200&section=header&text=Business+Intelligence&fontSize=50&fontColor=dcc99a&fontAlignY=52&animation=fadeIn&desc=Looker+%7C+Tableau+%7C+Mode+%7C+Thoughtspot&descSize=18&descAlignY=72&descColor=7da8cc" />
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=500&size=20&duration=3500&pause=800&color=0a1628&center=true&vCenter=true&width=700&height=50&lines=Data+tells+a+story.+Dashboards+make+it+undeniable.;LookML%3A+business+logic+in+version+control.;DORA+metrics+that+drive+engineering+decisions.;Tableau%3A+from+raw+numbers+to+clear+narrative." alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=IBM+Plex+Mono&weight=500&size=20&duration=3500&pause=800&color=0a1628&center=true&vCenter=true&width=700&height=50&lines=Data+tells+a+story.+Dashboards+make+it+undeniable.;LookML%3A+business+logic+in+version+control.;DORA+metrics+that+drive+engineering+decisions.;Looker+%7C+Tableau+%7C+Mode+%7C+Thoughtspot." alt="Typing SVG" />
 
 </div>
 
@@ -256,6 +256,8 @@ lookml/
 ![Looker](https://img.shields.io/badge/Looker-4285F4?style=for-the-badge&logo=looker&logoColor=white)
 ![LookML](https://img.shields.io/badge/LookML-1a3a5c?style=for-the-badge&logoColor=white)
 ![Tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=tableau&logoColor=white)
+![Mode](https://img.shields.io/badge/Mode-1A1A1A?style=for-the-badge&logoColor=white)
+![Thoughtspot](https://img.shields.io/badge/Thoughtspot-0068D9?style=for-the-badge&logoColor=white)
 ![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)
 
 </div>
